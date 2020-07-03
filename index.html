@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Three.js Example</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: white;
+            height: 200px;
+            width: 300px;
+            margin: 2em;
+            padding: 1em;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        input {
+            margin-bottom: 1em;
+        }
+    </style>
+    <script>
+
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <p>Input X</p>
+        <input id="x" name="x" type="number" />
+        <p>Input Z</p>
+        <input id="z" name="z" type="number" />
+        <p>Input Layer</p>
+        <input id="layer" name="layer" type="number" /><br>
+        <a id="add" href="#">Add Pillar</a>
+    </div>
+    <script type="module">
+        import * as THREE from './node_modules/three/build/three.module.js'
+        import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls.js';
+
+        //import Scene and Camera
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+        let x_axis = document.getElementById('x');
+        let z_axis = document.getElementById('z');
+        let add = document.getElementById('add');
+
+        // Renderer 
+        var renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setClearColor('#242424')
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window,innerWidth / window.innerHeight;
+
+            camera.updateProjectionMatrix();
+        })
+
+        // Materials
+        var geo_plane = new THREE.BoxGeometry(50, 0, 80);
+        var mat_plane = new THREE.MeshToonMaterial( { color: 0xffffff } );
+        var geo_pondasi = new THREE.BoxGeometry(0, 8, 0);
+        var mat_pondasi = new THREE.MeshToonMaterial( { color: 0xff0000 } );
+
+        // Add pondasi function
+        function addPondasi(x, z, l){
+            var pondasi = new THREE.Mesh( geo_pondasi, mat_pondasi )
+            // let lay = Number(l) > 1 ? Number(l)+1 : 1;
+            // console.log(lay);
+            pondasi.position.set(x, 4*l, z);
+            scene.add(pondasi);
+        }
+
+        // Load session data
+        let session = []
+        if(sessionStorage.getItem('box')){
+           console.log(sessionStorage.getItem('box'))
+           session = JSON.parse(sessionStorage.getItem('box'))
+           session.forEach(item => {
+               addPondasi(item.x, item.z, item.l)
+           });
+        }
+
+        var plane = new THREE.Mesh( geo_plane, mat_plane );
+        plane.position.set(0,0,0);
+
+        add.addEventListener("click", (e) => {
+            e.preventDefault();
+            addPondasi( x_axis.value, z_axis.value, layer.value);
+            let data = session
+            data.push(({id: Date.now(), x: x_axis.value, z: z_axis.value, l: layer.value }));
+            sessionStorage.setItem('box', JSON.stringify(data));
+        })
+
+        var size = 100;
+        var divisions = 50;
+
+        var gridHelper = new THREE.GridHelper( size, divisions );
+        scene.add( gridHelper );
+
+        //lighting
+        var light = new THREE.PointLight( 0xffffff, 1, 500 );
+        light.position.set( 50, 100, 10 );
+        scene.add(light);
+        scene.add(plane);
+
+        // Render Scene
+        var controls = new OrbitControls( camera, renderer.domElement );
+        camera.position.set( 50, 10, 50 );
+        controls.update();
+
+        var animate = function () {
+            requestAnimationFrame( animate );
+
+            controls.update();
+
+            renderer.render( scene, camera );
+        };
+        animate();
+    </script>
+</body>
+
+</html>
